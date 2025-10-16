@@ -1,0 +1,57 @@
+name: Rec Activity Automated Scraper (6am-12am, 10 mins intervals)
+
+on:
+  schedule:
+    - cron: "*/10 * * * *" # 10 mins
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install deps
+        run: |
+          pip install -r requirements.txt
+
+      - name: Time Gate (PT 06:00-24:00)
+        id: gate
+        run: |
+          python - << 'PY'
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          now = datetime.now(ZoneInfo("America/Los_Angeles"))
+          allowed = 6 <= now.hour <= 23  # 6:00-24:00 inclusive
+          print("Local time:", now.isoformat(), "allowed:", allowed)
+          with open("$GITHUB_OUTPUT","a") as f:
+              f.write(f"allowed={'true' if allowed else 'false'}\n")
+          PY
+
+      - name: Skip outside window
+        if: steps.gate.outputs.allowed == 'false'
+        run: echo "Outside 6am-midnight PT window. Skipping." && exit 0
+
+      - name: Run scraper
+        env:
+          REQUESTS_CA_BUNDLE: ${{ github.workspace }}/custom-ca-bundle.pem
+        run: |
+          python scraper.py
+
+      - name: Commit CSV
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add rec_data.csv
+          git commit -m "data: $(date -u +'%Y-%m-%dT%H:%M:%SZ')" || echo "No changes"
+          git push
