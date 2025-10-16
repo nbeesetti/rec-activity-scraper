@@ -1,8 +1,8 @@
-name: Rec Activity Automated Scraper (6am-12am, 10 mins intervals)
+name: Rec Activity Automated Scraper (6am-12am, ~5 min intervals)
 
 on:
   schedule:
-    - cron: "*/10 * * * *" # 10 mins
+    - cron: "*/5 * * * *" # approx 5 mins
   workflow_dispatch:
 
 permissions:
