@@ -40,7 +40,7 @@ jobs:
 
       - name: Skip outside window
         if: steps.gate.outputs.allowed == 'false'
-        run: echo "Outside 6am-midnight PT window. Skipping." && exit 0
+        run: echo "Outside 6am-midnight PT window. Skipping." && exit 78
 
       - name: Run scraper
         env:
